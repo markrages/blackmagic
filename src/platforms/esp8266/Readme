@@ -1,0 +1,14 @@
+Requires esp-open-rtos from https://github.com/SuperHouse/esp-open-rtos
+
+Try the "http_get" example in the rtos distribution to make sure everything is set up properly.
+
+Connect serial interface cable (FTDI cable) to RX and TX.
+
+In Makefile.inc, set the following:
+
+  RTOS_PATH (path to the rtos installation)
+  ESPPORT (path to serial interface to esp8266 module)
+
+Power up the module with GPIO0 pulled low to put it in programming mode.
+
+Then "make PROBE_HOST=esp8266 flash" should build and install the firmware.

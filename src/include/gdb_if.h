@@ -21,7 +21,7 @@
 #ifndef __GDB_IF_H
 #define __GDB_IF_H
 
-#if !defined(LIBFTDI)
+#ifndef NO_USB_PLEASE
 #include <libopencm3/usb/usbd.h>
 void gdb_usb_out_cb(usbd_device *dev, uint8_t ep);
 #endif
@@ -32,4 +32,3 @@ unsigned char gdb_if_getchar_to(int timeout);
 void gdb_if_putchar(unsigned char c, int flush);
 
 #endif
-

@@ -24,14 +24,20 @@
  */
 #include <stdio.h>
 
-#ifndef WIN32
-#   include <sys/socket.h>
-#   include <netinet/in.h>
-#   include <sys/select.h>
-#else
+#ifdef WIN32
 #   include <winsock2.h>
 #   include <windows.h>
 #   include <ws2tcpip.h>
+#elif defined LWIP
+#   include "lwip/err.h"
+#   include "lwip/sockets.h"
+#   include "lwip/sys.h"
+#   include "lwip/netdb.h"
+#   include "lwip/dns.h"
+#else
+#   include <sys/socket.h>
+#   include <netinet/in.h>
+#   include <sys/select.h>
 #endif
 
 #include <assert.h>
@@ -114,4 +120,3 @@ void gdb_if_putchar(unsigned char c, int flush)
 	if (gdb_if_conn > 0)
 		send(gdb_if_conn, (void*)&c, 1, 0);
 }
-
