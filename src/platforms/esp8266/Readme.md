@@ -54,6 +54,8 @@ Hacking
 
 Undefine `ACCESS_POINT_MODE` in platform.c to have the debugger act as a wifi client instead of an access point.  This didn't work when I tried it on my network.  The data never made it from the esp8266's TCP stack to gdb, although it worked in the other direction.
 
+Change .authmode from AUTH_OPEN to have a password-protected wifi experience.  Password is set by AP_PSK.
+
 Don't try debugging prints during the SWD transactions. They will affect timing enough that JTAG will fail.
 
 License
