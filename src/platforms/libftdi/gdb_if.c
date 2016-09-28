@@ -113,10 +113,18 @@ unsigned char gdb_if_getchar_to(int timeout)
 	return -1;
 }
 
+
+#define OUT_BUFFER_LEN 512
+static unsigned char outbuf[OUT_BUFFER_LEN];
+static int buf_head = 0;
+
 void gdb_if_putchar(unsigned char c, int flush)
 {
-	(void)flush;
-
-	if (gdb_if_conn > 0)
-		send(gdb_if_conn, (void*)&c, 1, 0);
+     if (gdb_if_conn > 0) {
+	  outbuf[buf_head++] = c;
+	  if ((flush) || (buf_head==OUT_BUFFER_LEN)) {
+	    send(gdb_if_conn, (void *)outbuf, buf_head, 0);
+	    buf_head=0;
+	  }
+     }
 }
