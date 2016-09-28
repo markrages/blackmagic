@@ -26,10 +26,7 @@
 #define SET_RUN_STATE(state)
 #define SET_IDLE_STATE(state)
 #define SET_ERROR_STATE(state)
-
-void platform_buffer_flush(void);
-int platform_buffer_write(const uint8_t *data, int size);
-int platform_buffer_read(uint8_t *data, int size);
+#define DEBUG(x, ...) do { ; } while (0)
 
 #include "timing.h"
 
@@ -39,16 +36,23 @@ int platform_buffer_read(uint8_t *data, int size);
 
 #define TMS_SET_MODE() do { } while (0)
 
-#define TMS_PIN (12) // no-connects on ESP-01
+// no-connects on ESP-01: 12,13,14,15
+#define TMS_PIN (2) // no-connects on ESP-01
 #define TDI_PIN (13) // "
 #define TDO_PIN (14) // "
-#define TCK_PIN (15) // "
-#define SWDIO_PIN (0)
-#define SWCLK_PIN (2)
+#define TCK_PIN (3) // "
+// 2 is GPIO2, broken out
+// 3 is RXD
 
-#define gpio_set_val(port, pin, value) gpio_write(pin, value)
-#define gpio_set(port, pin) gpio_write(pin, 1)
-#define gpio_clear(port, pin) gpio_write(pin, 0)
+#define SWDIO_PIN TMS_PIN
+#define SWCLK_PIN TCK_PIN
+
+#define gpio_set_val(port, pin, value) do {\
+    gpio_write(pin, value);		   \
+    /*sdk_os_delay_us(2);	*/	   \
+  } while (0);
+#define gpio_set(port, pin) gpio_set_val(port, pin, 1)
+#define gpio_clear(port, pin) gpio_set_val(port, pin, 0)
 #define gpio_get(port, pin) gpio_read(pin)
 
 #define SWDIO_MODE_FLOAT() do {			\

@@ -10,6 +10,7 @@ CFLAGS += -Wno-unused-parameter
 CFLAGS += -Wno-sign-compare
 CFLAGS += -Wno-old-style-declaration
 CFLAGS += -Wno-type-limits
+CFLAGS += -Wno-unused-variable
 
 # we need to supercede these, or borrow specific versions from other platforms
 SRC := $(filter-out main.c gdb_if.c jtagtap.c, $(SRC))
@@ -28,10 +29,12 @@ PROGRAM_SRC_FILES += platforms/stm32/jtagtap.c
 BUILD_DIR = platforms/esp8266/build/
 FIRMWARE_DIR = platforms/esp8266/firmware/
 
+EXTRA_COMPONENTS=extras/dhcpserver
+
 include $(RTOS_PATH)/common.mk
 
 host_clean:
 	$(Q) rm -rf $(BUILD_DIR) $(FIRMWARE_DIR)
 
 debug_shell: flash
-	miniterm.py $(ESPPORT) 115200
+	miniterm.py $(ESPPORT) 460800

@@ -37,37 +37,35 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include <dhcpserver.h>
+
+#define ACCESS_POINT_MODE
+#define AP_SSID  "blackmagic"
+#define AP_PSK   "blackmagic"
+
 void platform_init(int argc, char **argv)
 {
   (void) argc;
   (void) argv;
 
-  struct ip_info ipconfig;
+  gpio_set_iomux_function(3, IOMUX_GPIO3_FUNC_GPIO);
+  gpio_set_iomux_function(2, IOMUX_GPIO2_FUNC_GPIO);
 
-  do {
-    //get ip info of ESP8266 station
-    sdk_wifi_get_ip_info(STATION_IF, &ipconfig);
+  gpio_clear(_, SWCLK_PIN);
+  gpio_clear(_, SWDIO_PIN);
 
-  } while (ipconfig.ip.addr==0);
-
-  printf("IP ADDR " IPSTR "\n", IP2STR(&ipconfig));
+  gpio_enable(SWCLK_PIN, GPIO_OUTPUT);
+  gpio_enable(SWDIO_PIN, GPIO_OUTPUT);
 
   assert(gdb_if_init() == 0);
-
 }
 
 void platform_srst_set_val(bool assert)
 {
 	(void)assert;
-	platform_buffer_flush();
 }
 
 bool platform_srst_get_val(void) { return false; }
-
-void platform_buffer_flush(void)
-{
-  ;
-}
 
 const char *platform_target_voltage(void)
 {
@@ -119,17 +117,44 @@ void main_task(void *parameters)
 
 void user_init(void)
 {
-    uart_set_baud(0, 115200);
+    uart_set_baud(0, 460800);
     printf("SDK version:%s\n", sdk_system_get_sdk_version());
 
+#ifndef ACCESS_POINT_MODE
     struct sdk_station_config config = {
-        .ssid = WIFI_SSID,
-        .password = WIFI_PASS,
+      .ssid = WIFI_SSID,
+      .password = WIFI_PASS,
     };
 
-    /* required to call wifi_set_opmode before station_set_config */
     sdk_wifi_set_opmode(STATION_MODE);
     sdk_wifi_station_set_config(&config);
+#else
 
+    /* required to call wifi_set_opmode before station_set_config */
+    sdk_wifi_set_opmode(SOFTAP_MODE);
+
+    struct ip_info ap_ip;
+    IP4_ADDR(&ap_ip.ip, 172, 16, 0, 1);
+    IP4_ADDR(&ap_ip.gw, 0, 0, 0, 0);
+    IP4_ADDR(&ap_ip.netmask, 255, 255, 0, 0);
+    sdk_wifi_set_ip_info(1, &ap_ip);
+
+    struct sdk_softap_config ap_config = {
+      .ssid = AP_SSID,
+      .ssid_hidden = 0,
+      .channel = 3,
+      .ssid_len = strlen(AP_SSID),
+      .authmode = AUTH_OPEN, //AUTH_WPA_WPA2_PSK,
+      .password = AP_PSK,
+      .max_connection = 3,
+      .beacon_interval = 100,
+    };
+    sdk_wifi_softap_set_config(&ap_config);
+
+    ip_addr_t first_client_ip;
+    IP4_ADDR(&first_client_ip, 172, 16, 0, 2);
+    dhcpserver_start(&first_client_ip, 4);
+
+#endif
     xTaskCreate(&main_task, (signed char *)"main", 4*256, NULL, 2, NULL);
 }
