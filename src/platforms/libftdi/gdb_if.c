@@ -120,11 +120,11 @@ static int buf_head = 0;
 
 void gdb_if_putchar(unsigned char c, int flush)
 {
-     if (gdb_if_conn > 0) {
-	  outbuf[buf_head++] = c;
-	  if ((flush) || (buf_head==OUT_BUFFER_LEN)) {
-	    send(gdb_if_conn, (void *)outbuf, buf_head, 0);
-	    buf_head=0;
-	  }
-     }
+	if (gdb_if_conn > 0) {
+		outbuf[buf_head++] = c;
+		if ((flush) || (buf_head==OUT_BUFFER_LEN)) {
+			send(gdb_if_conn, (void *)outbuf, buf_head, 0);
+			buf_head=0;
+		}
+	}
 }
