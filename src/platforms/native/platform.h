@@ -99,9 +99,9 @@
 #define LED_0		GPIO2
 #define LED_1		GPIO10
 #define LED_2		GPIO11
-#define LED_UART	(platform_hwversion() < 2 ? LED_2 : LED_0)
+#define LED_UART	LED_0
 #define LED_IDLE_RUN	LED_1
-#define LED_ERROR	(platform_hwversion() < 2 ? LED_0 : LED_2)
+#define LED_ERROR	LED_2
 
 #define TMS_SET_MODE() \
 	gpio_set_mode(TMS_PORT, GPIO_MODE_OUTPUT_50_MHZ, \
@@ -149,9 +149,9 @@
 
 #ifdef ENABLE_DEBUG
 extern bool debug_bmp;
-void usbuart_debug_outf(const char *fmt, ...);
+int usbuart_debug_write(const char *buf, size_t len);
 
-#define DEBUG(...) if (debug_bmp) {usbuart_debug_outf("bmp: ");usbuart_debug_outf(__VA_ARGS__);}
+#define DEBUG printf
 #else
 #define DEBUG(...)
 #endif
