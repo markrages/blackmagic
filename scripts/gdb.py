@@ -48,6 +48,9 @@ class FakeSocket:
 	def recv(self, bufsize):
 		return self.file.read(bufsize)
 
+	def flushInput(self):
+		self.file.flushInput()
+
 class Target:
 	def __init__(self, sock):
 		if "send" in dir(sock):
@@ -104,6 +107,7 @@ class Target:
 			self.sock.send('#')
 			self.sock.send("%02X" % (csum & 0xFF))
 			if self.sock.recv(1) == '+': break
+			self.sock.flushInput()
 
 	def monitor(self, cmd):
 		"""Send gdb "monitor" command to target"""
@@ -297,5 +301,3 @@ class Target:
 	def flash_commit(self, progress_cb=None):
 		for m in self.mem:
 			m.commit(progress_cb)
-
-
