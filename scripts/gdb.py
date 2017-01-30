@@ -3,7 +3,7 @@
 # gdb.py: Python module for low level GDB protocol implementation
 # Copyright (C) 2009  Black Sphere Technologies
 # Written by Gareth McMullin <gareth@blacksphere.co.nz>
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -41,7 +41,7 @@ class FakeSocket:
 	"""Emulate socket functions send and recv on a file object"""
 	def __init__(self, file):
 		self.file = file
-	
+
 	def send(self, data):
 		self.file.write(data)
 
@@ -55,7 +55,7 @@ class Target:
 	def __init__(self, sock):
 		if "send" in dir(sock):
 			self.sock = sock
-		else:	
+		else:
 			self.sock = FakeSocket(sock)
 
 	def getpacket(self):
@@ -78,7 +78,7 @@ class Target:
 					c = self.sock.recv(1)
 					csum += ord(c) + ord('}')
 					packet += chr(ord(c) ^ 0x20)
-					continue	
+					continue
 
 				packet += c
 				csum += ord(c)
@@ -86,7 +86,7 @@ class Target:
 			if (csum & 0xFF) == int(self.sock.recv(2),16): break
 
 			self.sock.send('-')
-		
+
 		self.sock.send('+')
 		return packet
 
@@ -94,18 +94,19 @@ class Target:
 	def putpacket(self, packet):
 		"""Send packet to GDB target and wait for acknowledge"""
 		while True:
-			self.sock.send('$')
+                        out = ['$']
 			csum = 0
 			for c in packet:
 				if (c == '$') or (c == '#') or (c == '}'):
-					self.sock.send('}')
-					self.sock.send(chr(ord(c) ^ 0x20))
+					out.append('}')
+					out.append(chr(ord(c) ^ 0x20))
 					csum += (ord(c) ^ 0x20) + ord('}')
 				else:
-					self.sock.send(c)
+					out.append(c)
 					csum += ord(c)
-			self.sock.send('#')
-			self.sock.send("%02X" % (csum & 0xFF))
+			out.append('#')
+			out.append("%02X" % (csum & 0xFF))
+                        self.sock.send(''.join(out))
 			if self.sock.recv(1) == '+': break
 			self.sock.flushInput()
 
@@ -126,13 +127,13 @@ class Target:
 		"""Attach to target process (gdb "attach" command)"""
 		self.putpacket("vAttach;%08X" % pid)
 		reply = self.getpacket()
-		if (len(reply) == 0) or (reply[0] == 'E'): 
+		if (len(reply) == 0) or (reply[0] == 'E'):
 			raise Exception('Failed to attach to remote pid %d' % pid)
 
 	def detach(self):
 		"""Detach from target process (gdb "detach" command)"""
 		self.putpacket("D")
-		if self.getpacket() != 'OK': 
+		if self.getpacket() != 'OK':
 			raise Exception("Failed to detach from remote process")
 
 	def reset(self):
@@ -143,25 +144,25 @@ class Target:
 		"""Read length bytes from target at address addr"""
 		self.putpacket("m%08X,%08X" % (addr, length))
 		reply = self.getpacket()
-		if (len(reply) == 0) or (reply[0] == 'E'): 
+		if (len(reply) == 0) or (reply[0] == 'E'):
 			raise Exception('Error reading memory at 0x%08X' % addr)
 		try:
 			data = unhexify(reply)
 		except Excpetion:
 			raise Exception('Invalid response to memory read packet: %r' % reply)
 		return data
-		
+
 	def write_mem(self, addr, data):
 		"""Write data to target at address addr"""
 		self.putpacket("X%08X,%08X:%s" % (addr, len(data), data))
-		if self.getpacket() != 'OK': 
+		if self.getpacket() != 'OK':
 			raise Exception('Error writing to memory at 0x%08X' % addr)
 
 	def read_regs(self):
 		"""Read target core registers"""
 		self.putpacket("g")
 		reply = self.getpacket()
-		if (len(reply) == 0) or (reply[0] == 'E'): 
+		if (len(reply) == 0) or (reply[0] == 'E'):
 			raise Exception('Error reading memory at 0x%08X' % addr)
 		try:
 			data = unhexify(reply)
@@ -173,7 +174,7 @@ class Target:
 		"""Write target core registers"""
 		data = struct.pack("=%dL" % len(regs), *regs)
 		self.putpacket("G" + hexify(data))
-		if self.getpacket() != 'OK': 
+		if self.getpacket() != 'OK':
 			raise Exception('Error writing to target core registers')
 
 	def memmap_read(self):
@@ -190,7 +191,7 @@ class Target:
 				raise Exception("Invalid GDB stub response")
 
 			if reply[0] == 'l': return ret
-			
+
 	def resume(self):
 		"""Resume target execution"""
 		self.putpacket("c")
@@ -224,7 +225,7 @@ class Target:
 			self.blocks = list(None for i in range(length / blocksize))
 
 		def prog(self, offset, data):
-			assert ((offset >= self.offset) and 
+			assert ((offset >= self.offset) and
 				(offset + len(data) <= self.offset + self.length))
 
 			while data:
@@ -234,14 +235,14 @@ class Target:
 				data = data[len(bldata):]; offset += len(bldata)
 				if self.blocks[index] is None: # Initialize a clear block
 					self.blocks[index] = "".join(chr(0xff) for i in range(self.blocksize))
-				self.blocks[index] = (self.blocks[index][:bloffset] + bldata + 
+				self.blocks[index] = (self.blocks[index][:bloffset] + bldata +
 						self.blocks[index][bloffset+len(bldata):])
 
 		def commit(self, progress_cb=None):
 			totalblocks = 0
 			for b in self.blocks:
 				if b is not None: totalblocks += 1
-				
+
 			block = 0
 			for i in range(len(self.blocks)):
 				block += 1
@@ -253,9 +254,9 @@ class Target:
 				addr = self.offset + self.blocksize * i
 				if data is None: continue
 				#print "Erasing flash at 0x%X" % (self.offset + self.blocksize*i)
-				self.target.putpacket("vFlashErase:%08X,%08X" % 
+				self.target.putpacket("vFlashErase:%08X,%08X" %
 					(self.offset + self.blocksize*i, self.blocksize))
-				if self.target.getpacket() != 'OK': 
+				if self.target.getpacket() != 'OK':
 					raise Exception("Failed to erase flash")
 
 				while data:
@@ -264,20 +265,20 @@ class Target:
 					#print "Writing %d bytes at 0x%X" % (len(d), addr)
 					self.target.putpacket("vFlashWrite:%08X:%s" % (addr, d))
 					addr += len(d)
-					if self.target.getpacket() != 'OK': 
+					if self.target.getpacket() != 'OK':
 						raise Exception("Failed to write flash")
-					
+
 				self.target.putpacket("vFlashDone")
-				if self.target.getpacket() != 'OK': 
+				if self.target.getpacket() != 'OK':
 					raise Exception("Failed to commit")
-			
+
 			self.blocks = list(None for i in range(self.length / self.blocksize))
-			
+
 
 	def flash_probe(self):
 		self.mem = []
 		xmldom = parseString(self.memmap_read())
-		
+
 		for memrange in xmldom.getElementsByTagName("memory"):
 			if memrange.getAttribute("type") != "flash": continue
 			offset = eval(memrange.getAttribute("start"))
