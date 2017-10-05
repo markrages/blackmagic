@@ -48,6 +48,7 @@ SRC =			\
 	nrf51.c		\
 	platform.c	\
 	sam3x.c		\
+	sam4l.c	\
 	samd.c		\
 	stm32f1.c	\
 	stm32f4.c	\
@@ -82,10 +83,12 @@ blackmagic: include/version.h $(OBJ)
 clean:	host_clean
 	$(Q)echo "  CLEAN"
 	-$(Q)$(RM) -f *.o *.d *~ blackmagic $(HOSTFILES)
-	-$(Q)$(RM) -f platforms/*/*.o platforms/*/*.d mapfile
+	-$(Q)$(RM) -f platforms/*/*.o platforms/*/*.d mapfile include/version.h
 
 all_platforms:
 	$(Q)set -e ;\
+	mkdir -p artifacts/$(shell git describe --always) ;\
+	echo "<html><body><ul>" > artifacts/index.html ;\
 	for i in platforms/*/Makefile.inc ; do \
 		export DIRNAME=`dirname $$i` ;\
 		export PROBE_HOST=`basename $$DIRNAME` ;\
@@ -94,13 +97,18 @@ all_platforms:
 		$(MAKE) $(MAKEFLAGS) clean ;\
 		$(MAKE) $(MAKEFLAGS);\
 		if [ -f blackmagic.bin ]; then \
-			mv blackmagic.bin blackmagic-$$PROBE_HOST.bin ;\
+			mv blackmagic.bin artifacts/blackmagic-$$PROBE_HOST.bin ;\
+			echo "<li><a href='blackmagic-$$PROBE_HOST.bin'>$$PROBE_HOST</a></li>"\
+				>> artifacts/index.html ;\
 		fi ;\
-	done
+	done ;\
+	echo "</ul></body></html>" >> artifacts/index.html ;\
+	cp artifacts/*.bin artifacts/$(shell git describe --always)
+
+command.c: include/version.h
 
 include/version.h: FORCE
 	$(Q)echo "  GIT     include/version.h"
-	$(Q)echo "#define FIRMWARE_VERSION \"`git describe --dirty`\"" > $@
+	$(Q)echo "#define FIRMWARE_VERSION \"`git describe --always --dirty`\"" > $@
 
 -include *.d
-

@@ -34,7 +34,7 @@
 
 #include <unistd.h>
 
-static char cortexm_driver_str[] = "ARM Cortex-M";
+static const char cortexm_driver_str[] = "ARM Cortex-M";
 
 static bool cortexm_vector_catch(target *t, int argc, char *argv[]);
 
@@ -262,6 +262,7 @@ bool cortexm_probe(ADIv5_AP_t *ap)
 	PROBE(lpc15xx_probe);
 	PROBE(lpc43xx_probe);
 	PROBE(sam3x_probe);
+	PROBE(sam4l_probe);
 	PROBE(nrf51_probe);
 	PROBE(samd_probe);
 	PROBE(lmi_probe);
@@ -441,6 +442,11 @@ static void cortexm_reset(target *t)
 	 */
 	target_mem_write32(t, CORTEXM_AIRCR,
 	                   CORTEXM_AIRCR_VECTKEY | CORTEXM_AIRCR_SYSRESETREQ);
+
+	/* If target needs to do something extra (see Atmel SAM4L for example) */
+	if (t->extended_reset != NULL) {
+		t->extended_reset(t);
+	}
 
 	/* Poll for release from reset */
 	while (target_mem_read32(t, CORTEXM_DHCSR) & CORTEXM_DHCSR_S_RESET_ST);
@@ -627,9 +633,16 @@ int cortexm_run_stub(target *t, uint32_t loadaddr,
 		return -1;
 
 	/* Execute the stub */
+	enum target_halt_reason reason;
 	cortexm_halt_resume(t, 0);
-	while (!cortexm_halt_poll(t, NULL))
+	while ((reason = cortexm_halt_poll(t, NULL)) == TARGET_HALT_RUNNING)
 		;
+
+	if (reason == TARGET_HALT_ERROR)
+		raise_exception(EXCEPTION_ERROR, "Target lost in stub");
+
+	if (reason != TARGET_HALT_BREAKPOINT)
+		return -2;
 
 	uint32_t pc = cortexm_pc_read(t);
 	uint16_t bkpt_instr = target_mem_read16(t, pc);
