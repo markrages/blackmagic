@@ -199,6 +199,9 @@ int target_flash_erase(target *t, target_addr addr, size_t len)
 	int ret = 0;
 	while (len) {
 		struct target_flash *f = flash_for_addr(t, addr);
+		if (!f)
+			return -1;
+
 		size_t tmplen = MIN(len, f->length - (addr % f->length));
 		ret |= f->erase(f, addr, tmplen);
 		addr += tmplen;
@@ -213,6 +216,9 @@ int target_flash_write(target *t,
 	int ret = 0;
 	while (len) {
 		struct target_flash *f = flash_for_addr(t, dest);
+		if (!f)
+			return -1;
+
 		size_t tmptarget = MIN(dest + len, f->start + f->length);
 		size_t tmplen = tmptarget - dest;
 		if (f->align > 1) {
@@ -563,4 +569,3 @@ int tc_system(target *t, target_addr cmd, size_t cmdlen)
 	}
 	return t->tc->system(t->tc, cmd, cmdlen);
 }
-

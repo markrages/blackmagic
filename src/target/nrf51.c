@@ -112,7 +112,7 @@ bool nrf51_probe(target *t)
 	case 0x0020: /* nRF51822 (rev 1) CEAA BA */
 	case 0x0024: /* nRF51422 (rev 1) QFAA C0 */
 	case 0x002A: /* nRF51822 (rev 2) QFAA FA0 */
-	case 0x004A: /* nRF51822 (rev 3) QFAA G1 */ 			
+	case 0x004A: /* nRF51822 (rev 3) QFAA G1 */
 	case 0x002D: /* nRF51422 (rev 2) QFAA DAA */
 	case 0x002E: /* nRF51422 (rev 2) QFAA E0 */
 	case 0x002F: /* nRF51822 (rev 1) CEAA B0 */
@@ -129,7 +129,7 @@ bool nrf51_probe(target *t)
 	case 0x0079: /* nRF51822 (rev 3) CEAA E0 */
 	case 0x007A: /* nRF51422 (rev 3) CEAA C0 */
 	case 0x008F: /* nRF51822 (rev 3) QFAA H1 See https://devzone.nordicsemi.com/question/97769/can-someone-conform-the-config-id-code-for-the-nrf51822qfaah1/ */
-	case 0x00D1: /* nRF51822 (rev 3) QFAA H2 */		
+	case 0x00D1: /* nRF51822 (rev 3) QFAA H2 */
 		t->driver = "Nordic nRF51";
 		target_add_ram(t, 0x20000000, 0x4000);
 		nrf51_add_flash(t, 0x00000000, 0x40000, NRF51_PAGE_SIZE);
@@ -208,6 +208,9 @@ static int nrf51_flash_erase(struct target_flash *f, target_addr addr, size_t le
 		while (target_mem_read32(t, NRF51_NVMC_READY) == 0)
 			if(target_check_error(t))
 				return -1;
+
+		if (len < f->blocksize)
+			return -1; // aligment problem?
 
 		addr += f->blocksize;
 		len -= f->blocksize;
