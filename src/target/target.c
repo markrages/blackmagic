@@ -199,10 +199,13 @@ int target_flash_erase(target *t, target_addr addr, size_t len)
 	int ret = 0;
 	while (len) {
 		struct target_flash *f = flash_for_addr(t, addr);
+
 		if (!f)
 			return -1;
 
-		size_t tmplen = MIN(len, f->length - (addr % f->length));
+		size_t tmptarget = MIN(addr + len, f->start + f->length);
+		size_t tmplen = tmptarget - addr;
+
 		ret |= f->erase(f, addr, tmplen);
 		addr += tmplen;
 		len -= tmplen;
