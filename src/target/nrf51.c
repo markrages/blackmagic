@@ -131,6 +131,7 @@ bool nrf51_probe(target *t)
 	case 0x008F: /* nRF51822 (rev 3) QFAA H1 See https://devzone.nordicsemi.com/question/97769/can-someone-conform-the-config-id-code-for-the-nrf51822qfaah1/ */
 	case 0x00D1: /* nRF51822 (rev 3) QFAA H2 */		
 		t->driver = "Nordic nRF51";
+		t->target_options |= CORTEXM_TOPT_INHIBIT_SRST;
 		target_add_ram(t, 0x20000000, 0x4000);
 		nrf51_add_flash(t, 0x00000000, 0x40000, NRF51_PAGE_SIZE);
 		nrf51_add_flash(t, NRF51_UICR, 0x100, 0x100);
@@ -145,6 +146,7 @@ bool nrf51_probe(target *t)
 	case 0x007D: /* nRF51822 (rev 3) CDAB A0 */
 	case 0x007E: /* nRF51422 (rev 3) CDAB A0 */
 		t->driver = "Nordic nRF51";
+		t->target_options |= CORTEXM_TOPT_INHIBIT_SRST;
 		target_add_ram(t, 0x20000000, 0x4000);
 		nrf51_add_flash(t, 0x00000000, 0x20000, NRF51_PAGE_SIZE);
 		nrf51_add_flash(t, NRF51_UICR, 0x100, 0x100);
@@ -158,6 +160,7 @@ bool nrf51_probe(target *t)
 	case 0x0087: /* nRF51822 (rev 3) CFAC A0 */
 	case 0x0088: /* nRF51422 (rev 3) CFAC A0 */
 		t->driver = "Nordic nRF51";
+		t->target_options |= CORTEXM_TOPT_INHIBIT_SRST;
 		target_add_ram(t, 0x20000000, 0x8000);
 		nrf51_add_flash(t, 0x00000000, 0x40000, NRF51_PAGE_SIZE);
 		nrf51_add_flash(t, NRF51_UICR, 0x100, 0x100);
@@ -167,6 +170,7 @@ bool nrf51_probe(target *t)
 	case 0x00C7: /* nRF52832 Revision 1 QFAA B00 */
 	case 0x00E3: /* nRF52832-CIAA CSP */
 		t->driver = "Nordic nRF52";
+		t->target_options |= CORTEXM_TOPT_INHIBIT_SRST;
 		target_add_ram(t, 0x20000000, 64*1024);
 		nrf51_add_flash(t, 0x00000000, 512*1024, NRF52_PAGE_SIZE);
 /* This UICR size makes gdb issue vFlashErase at proper address.
@@ -178,6 +182,7 @@ bool nrf51_probe(target *t)
 		return true;
 	case 0x00EB: /* nRF52840 Preview QIAA AA0 */
 		t->driver = "Nordic nRF52";
+		t->target_options |= CORTEXM_TOPT_INHIBIT_SRST;
 		target_add_ram(t, 0x20000000, 256*1024);
 		nrf51_add_flash(t, 0x00000000, 1024*1024, NRF52_PAGE_SIZE);
 		nrf51_add_flash(t, NRF51_UICR, NRF52_UICR_SIZE, NRF52_UICR_SIZE);
