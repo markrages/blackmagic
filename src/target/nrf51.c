@@ -168,14 +168,18 @@ bool nrf51_probe(target *t)
 		t->driver = "Nordic nRF52";
 		target_add_ram(t, 0x20000000, 64*1024);
 		nrf51_add_flash(t, 0x00000000, 512*1024, NRF52_PAGE_SIZE);
-		nrf51_add_flash(t, NRF51_UICR, 0x100, 0x100);
+/* This UICR size makes gdb issue vFlashErase at proper address.
+   Fixed in upstream GDB in commit d9b477e3b7388732ed5293d929ceb5fc609916fe
+*/
+#define NRF52_UICR_SIZE (0x400)
+		nrf51_add_flash(t, NRF51_UICR, NRF52_UICR_SIZE, NRF52_UICR_SIZE);
 		target_add_commands(t, nrf51_cmd_list, "nRF52");
 		return true;
 	case 0x00EB: /* nRF52840 Preview QIAA AA0 */
 		t->driver = "Nordic nRF52";
 		target_add_ram(t, 0x20000000, 256*1024);
 		nrf51_add_flash(t, 0x00000000, 1024*1024, NRF52_PAGE_SIZE);
-		nrf51_add_flash(t, NRF51_UICR, 0x100, 0x100);
+		nrf51_add_flash(t, NRF51_UICR, NRF52_UICR_SIZE, NRF52_UICR_SIZE);
 		target_add_commands(t, nrf51_cmd_list, "nRF52");
 		return true;
 	}
