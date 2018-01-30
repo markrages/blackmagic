@@ -28,6 +28,13 @@ int swdptap_init(void)
 	return 0;
 }
 
+static void clock_pulse(void)
+{
+	gpio_set(SWCLK_PORT, SWCLK_PIN);
+	__asm("nop");	__asm("nop");	__asm("nop");
+	gpio_clear(SWCLK_PORT, SWCLK_PIN);
+}
+
 static void swdptap_turnaround(uint8_t dir)
 {
 	static uint8_t olddir = 0;
@@ -42,8 +49,9 @@ static void swdptap_turnaround(uint8_t dir)
 
 	if(dir)
 		SWDIO_MODE_FLOAT();
-	gpio_set(SWCLK_PORT, SWCLK_PIN);
-	gpio_clear(SWCLK_PORT, SWCLK_PIN);
+
+	clock_pulse();
+
 	if(!dir)
 		SWDIO_MODE_DRIVE();
 }
@@ -55,8 +63,8 @@ bool swdptap_bit_in(void)
 	swdptap_turnaround(1);
 
 	ret = gpio_get(SWDIO_PORT, SWDIO_PIN);
-	gpio_set(SWCLK_PORT, SWCLK_PIN);
-	gpio_clear(SWCLK_PORT, SWCLK_PIN);
+
+	clock_pulse();
 
 #ifdef DEBUG_SWD_BITS
 	DEBUG("%d", ret?1:0);
@@ -74,7 +82,7 @@ void swdptap_bit_out(bool val)
 	swdptap_turnaround(0);
 
 	gpio_set_val(SWDIO_PORT, SWDIO_PIN, val);
-	gpio_set(SWCLK_PORT, SWCLK_PIN);
-	gpio_clear(SWCLK_PORT, SWCLK_PIN);
+	clock_pulse();
+
 }
 
