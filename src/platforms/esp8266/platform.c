@@ -76,10 +76,10 @@ const char *platform_target_voltage(void)
 
 uint32_t platform_time_ms(void)
 {
-	return xTaskGetTickCount() / portTICK_RATE_MS;
+	return xTaskGetTickCount() / portTICK_PERIOD_MS;
 }
 
-#define vTaskDelayMs(ms)	vTaskDelay((ms)/portTICK_RATE_MS)
+#define vTaskDelayMs(ms)	vTaskDelay((ms)/portTICK_PERIOD_MS)
 
 void platform_delay(uint32_t ms)
 {
@@ -155,5 +155,5 @@ void user_init(void)
 	dhcpserver_start(&first_client_ip, 4);
 
 #endif
-	xTaskCreate(&main_task, (signed char *)"main", 4*256, NULL, 2, NULL);
+	xTaskCreate(&main_task, "main", 4*256, NULL, 2, NULL);
 }

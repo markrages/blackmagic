@@ -24,12 +24,7 @@
  */
 #include <stdio.h>
 
-#ifndef WIN32
-#   include <sys/socket.h>
-#   include <netinet/in.h>
-#   include <netinet/tcp.h>
-#   include <sys/select.h>
-#else
+#ifdef WIN32
 #   include <winsock2.h>
 #   include <windows.h>
 #   include <ws2tcpip.h>
@@ -42,6 +37,7 @@
 #else
 #   include <sys/socket.h>
 #   include <netinet/in.h>
+#   include <netinet/tcp.h>
 #   include <sys/select.h>
 #endif
 

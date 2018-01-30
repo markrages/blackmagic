@@ -31,6 +31,8 @@ FIRMWARE_DIR = platforms/esp8266/firmware/
 
 EXTRA_COMPONENTS=extras/dhcpserver
 
+all: include/version.h
+
 include $(RTOS_PATH)/common.mk
 
 host_clean:

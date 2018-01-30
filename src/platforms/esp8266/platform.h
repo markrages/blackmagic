@@ -21,6 +21,12 @@
 #ifndef __PLATFORM_H
 #define __PLATFORM_H
 
+#undef PRIx32
+#define PRIx32 "x"
+
+#undef SCNx32
+#define SCNx32 "x"
+
 #define NO_USB_PLEASE
 
 #define SET_RUN_STATE(state)
