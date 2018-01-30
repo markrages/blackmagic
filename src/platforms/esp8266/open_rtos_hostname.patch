@@ -1,0 +1,17 @@
+diff --git a/lwip/esp_interface.c b/lwip/esp_interface.c
+index 77ad177..7a2e159 100644
+--- a/lwip/esp_interface.c
++++ b/lwip/esp_interface.c
+@@ -363,7 +363,12 @@ ethernetif_init(struct netif *netif)
+ 
+ #if LWIP_NETIF_HOSTNAME
+     /* Initialize interface hostname */
++#ifdef ESP8266_HOSTNAME
++    char *hostname = ESP8266_HOSTNAME;
++#else
+     char *hostname = NULL;
++#endif
++
+     /* Disabled for now as there were reports of crashes here, sysparam issues */
+     /* sysparam_get_string("hostname", &hostname); */
+     if (hostname && strlen(hostname) == 0) {

@@ -41,7 +41,7 @@
 
 #include <dhcpserver.h>
 
-#define ACCESS_POINT_MODE
+//#define ACCESS_POINT_MODE
 #define AP_SSID	 "blackmagic"
 #define AP_PSK	 "blackmagic"
 
