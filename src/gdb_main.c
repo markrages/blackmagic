@@ -264,7 +264,10 @@ int gdb_main_loop(struct target_controller *tc, bool in_syscall)
 				break;
 			}
 			DEBUG("X packet: addr = %" PRIx32 ", len = %" PRIx32 "\n", addr, len);
-			if (target_mem_write(cur_target, addr, pbuf+bin, len))
+			uint8_t tmpbuf[2048];
+			memcpy(tmpbuf, pbuf+bin, len);
+
+			if (target_mem_write(cur_target, addr, tmpbuf, len))
 				gdb_putpacketz("E01");
 			else
 				gdb_putpacketz("OK");
