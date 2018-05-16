@@ -1,0 +1,18 @@
+version: 2
+jobs:
+   build:
+     docker:
+       - image: malachib/esp-open-rtos:latest
+     steps:
+       - checkout
+       - run: echo -e '#define WIFI_SSID "mywifissid"\n#define WIFI_PASS "my secret password"\n' > src/include/private_ssid_config.h
+       - run: make esp8266
+       - run:
+           name: Copying Artifacts
+           command: |
+             mkdir deploy;
+             cp /home/esp/esp-open-rtos/bootloader/firmware_prebuilt/rboot.bin deploy/0x0000_rboot.bin;
+             cp /home/esp/esp-open-rtos/bootloader/firmware_prebuilt/blank_config.bin deploy/0x1000_blank_config.bin;
+             cp /home/esp/project/src/platforms/esp8266/firmware/blackmagic.bin deploy/0x2000_blackmagic.bin;
+       - store_artifacts:
+           path: deploy

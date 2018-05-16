@@ -24,16 +24,16 @@
  */
 #include <stdio.h>
 
-#ifdef WIN32
-#   include <winsock2.h>
-#   include <windows.h>
-#   include <ws2tcpip.h>
-#elif defined LWIP
+#if defined LWIP
 #   include "lwip/err.h"
 #   include "lwip/sockets.h"
 #   include "lwip/sys.h"
 #   include "lwip/netdb.h"
 #   include "lwip/dns.h"
+#elif defined WIN32
+#   include <winsock2.h>
+#   include <windows.h>
+#   include <ws2tcpip.h>
 #else
 #   include <sys/socket.h>
 #   include <netinet/in.h>
