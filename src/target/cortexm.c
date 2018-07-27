@@ -78,6 +78,9 @@ struct cortexm_priv {
 	unsigned hw_breakpoint_max;
 	/* Copy of DEMCR for vector-catch */
 	uint32_t demcr;
+	/* Cache parameters */
+	bool has_cache;
+	uint32_t dcache_minline;
 };
 
 /* Register number tables */
@@ -122,7 +125,10 @@ static const char tdesc_cortex_m[] =
 	"    <reg name=\"xpsr\" bitsize=\"32\"/>"
 	"    <reg name=\"msp\" bitsize=\"32\" save-restore=\"no\" type=\"data_ptr\"/>"
 	"    <reg name=\"psp\" bitsize=\"32\" save-restore=\"no\" type=\"data_ptr\"/>"
-	"    <reg name=\"special\" bitsize=\"32\" save-restore=\"no\"/>"
+	"    <reg name=\"primask\" bitsize=\"8\" save-restore=\"no\"/>"
+	"    <reg name=\"basepri\" bitsize=\"8\" save-restore=\"no\"/>"
+	"    <reg name=\"faultmask\" bitsize=\"8\" save-restore=\"no\"/>"
+	"    <reg name=\"control\" bitsize=\"8\" save-restore=\"no\"/>"
 	"  </feature>"
 	"</target>";
 
@@ -151,7 +157,10 @@ static const char tdesc_cortex_mf[] =
 	"    <reg name=\"xpsr\" bitsize=\"32\"/>"
 	"    <reg name=\"msp\" bitsize=\"32\" save-restore=\"no\" type=\"data_ptr\"/>"
 	"    <reg name=\"psp\" bitsize=\"32\" save-restore=\"no\" type=\"data_ptr\"/>"
-	"    <reg name=\"special\" bitsize=\"32\" save-restore=\"no\"/>"
+	"    <reg name=\"primask\" bitsize=\"8\" save-restore=\"no\"/>"
+	"    <reg name=\"basepri\" bitsize=\"8\" save-restore=\"no\"/>"
+	"    <reg name=\"faultmask\" bitsize=\"8\" save-restore=\"no\"/>"
+	"    <reg name=\"control\" bitsize=\"8\" save-restore=\"no\"/>"
 	"  </feature>"
 	"  <feature name=\"org.gnu.gdb.arm.vfp\">"
 	"    <reg name=\"fpscr\" bitsize=\"32\"/>"
@@ -179,13 +188,40 @@ ADIv5_AP_t *cortexm_ap(target *t)
 	return ((struct cortexm_priv *)t->priv)->ap;
 }
 
+static void cortexm_cache_clean(target *t, target_addr addr, size_t len, bool invalidate)
+{
+	struct cortexm_priv *priv = t->priv;
+	if (!priv->has_cache || (priv->dcache_minline == 0))
+		return;
+	uint32_t cache_reg = invalidate ? CORTEXM_DCCIMVAC : CORTEXM_DCCMVAC;
+	size_t minline = priv->dcache_minline;
+
+	/* flush data cache for RAM regions that intersect requested region */
+	target_addr mem_end = addr + len; /* following code is NOP if wraparound */
+	/* requested region is [src, src_end) */
+	for (struct target_ram *r = t->ram; r; r = r->next) {
+		target_addr ram = r->start;
+		target_addr ram_end = r->start + r->length;
+		/* RAM region is [ram, ram_end) */
+		if (addr > ram)
+			ram = addr;
+		if (mem_end < ram_end)
+			ram_end = mem_end;
+		/* intersection is [ram, ram_end) */
+		for (ram &= ~(minline-1); ram < ram_end; ram += minline)
+			adiv5_mem_write(cortexm_ap(t), cache_reg, &ram, 4);
+	}
+}
+
 static void cortexm_mem_read(target *t, void *dest, target_addr src, size_t len)
 {
+	cortexm_cache_clean(t, src, len, false);
 	adiv5_mem_read(cortexm_ap(t), dest, src, len);
 }
 
 static void cortexm_mem_write(target *t, target_addr dest, const void *src, size_t len)
 {
+	cortexm_cache_clean(t, dest, len, true);
 	adiv5_mem_write(cortexm_ap(t), dest, src, len);
 }
 
@@ -199,6 +235,33 @@ static void cortexm_priv_free(void *priv)
 {
 	adiv5_ap_unref(((struct cortexm_priv *)priv)->ap);
 	free(priv);
+}
+
+static bool cortexm_forced_halt(target *t)
+{
+	uint32_t start_time = platform_time_ms();
+	platform_srst_set_val(false);
+	/* Wait until SRST is released.*/
+	while (platform_time_ms() < start_time + 2000) {
+		if (!platform_srst_get_val())
+			break;
+	}
+	if (platform_srst_get_val())
+		return false;
+	uint32_t dhcsr = 0;
+	start_time = platform_time_ms();
+	/* Try hard to halt the target. STM32F7 in  WFI
+	   needs multiple writes!*/
+	while (platform_time_ms() < start_time + cortexm_wait_timeout) {
+		dhcsr = target_mem_read32(t, CORTEXM_DHCSR);
+		if (dhcsr == (CORTEXM_DHCSR_S_HALT | CORTEXM_DHCSR_S_REGRDY |
+					  CORTEXM_DHCSR_C_HALT | CORTEXM_DHCSR_C_DEBUGEN))
+			break;
+		target_halt_request(t);
+	}
+	if (dhcsr != 0x00030003)
+		return false;
+	return true;
 }
 
 bool cortexm_probe(ADIv5_AP_t *ap)
@@ -251,8 +314,19 @@ bool cortexm_probe(ADIv5_AP_t *ap)
 	priv->demcr = CORTEXM_DEMCR_TRCENA | CORTEXM_DEMCR_VC_HARDERR |
 			CORTEXM_DEMCR_VC_CORERESET;
 
+	/* Check cache type */
+	uint32_t ctr = target_mem_read32(t, CORTEXM_CTR);
+	if ((ctr >> 29) == 4) {
+		priv->has_cache = true;
+		priv->dcache_minline = 4 << (ctr & 0xf);
+	} else {
+		target_check_error(t);
+	}
+
+	if (!cortexm_forced_halt(t))
+		return false;
 #define PROBE(x) \
-	do { if ((x)(t)) return true; else target_check_error(t); } while (0)
+	do { if ((x)(t)) {target_halt_resume(t, 0); return true;} else target_check_error(t); } while (0)
 
 	PROBE(stm32f1_probe);
 	PROBE(stm32f4_probe);
@@ -260,6 +334,7 @@ bool cortexm_probe(ADIv5_AP_t *ap)
 	PROBE(stm32l4_probe);
 	PROBE(lpc11xx_probe);
 	PROBE(lpc15xx_probe);
+	PROBE(lpc17xx_probe);
 	PROBE(lpc43xx_probe);
 	PROBE(sam3x_probe);
 	PROBE(sam4l_probe);
@@ -268,6 +343,7 @@ bool cortexm_probe(ADIv5_AP_t *ap)
 	PROBE(lmi_probe);
 	PROBE(kinetis_probe);
 	PROBE(efm32_probe);
+	PROBE(msp432_probe);
 #undef PROBE
 
 	return true;
@@ -278,16 +354,12 @@ bool cortexm_attach(target *t)
 	struct cortexm_priv *priv = t->priv;
 	unsigned i;
 	uint32_t r;
-	int tries;
 
 	/* Clear any pending fault condition */
 	target_check_error(t);
 
 	target_halt_request(t);
-	tries = 10;
-	while(!platform_srst_get_val() && !target_halt_poll(t, NULL) && --tries)
-		platform_delay(200);
-	if(!tries)
+	if (!cortexm_forced_halt(t))
 		return false;
 
 	/* Request halt on reset */
@@ -323,8 +395,6 @@ bool cortexm_attach(target *t)
 	target_mem_write32(t, CORTEXM_FPB_CTRL,
 			CORTEXM_FPB_CTRL_KEY | CORTEXM_FPB_CTRL_ENABLE);
 
-	platform_srst_set_val(false);
-
 	return true;
 }
 
@@ -343,6 +413,8 @@ void cortexm_detach(target *t)
 
 	/* Disable debug */
 	target_mem_write32(t, CORTEXM_DHCSR, CORTEXM_DHCSR_DBGKEY);
+	/* Add some clock cycles to get the CPU running again.*/
+	target_mem_read32(t, 0);
 }
 
 enum { DB_DHCSR, DB_DCRSR, DB_DCRDR, DB_DEMCR };
@@ -410,6 +482,14 @@ static void cortexm_regs_write(target *t, const void *data)
 			                    ADIV5_AP_DB(DB_DCRSR),
 			                    0x10000 | regnum_cortex_mf[i]);
 		}
+}
+
+int cortexm_mem_write_sized(
+	target *t, target_addr dest, const void *src, size_t len, enum align align)
+{
+	cortexm_cache_clean(t, dest, len, true);
+	adiv5_mem_write_sized(cortexm_ap(t), dest, src, len, align);
+	return target_check_error(t);
 }
 
 static uint32_t cortexm_pc_read(target *t)
@@ -550,6 +630,9 @@ void cortexm_halt_resume(target *t, bool step)
 		if ((target_mem_read16(t, pc) & 0xFF00) == 0xBE00)
 			cortexm_pc_write(t, pc + 2);
 	}
+
+	if (priv->has_cache)
+		target_mem_write32(t, CORTEXM_ICIALLU, 0);
 
 	target_mem_write32(t, CORTEXM_DHCSR, dhcsr);
 }

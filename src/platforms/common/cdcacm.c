@@ -445,6 +445,7 @@ static int cdcacm_control_request(usbd_device *dev,
 		switch(req->wIndex) {
 		case 2:
 			usbuart_set_line_coding((struct usb_cdc_line_coding*)*buf);
+			return 1;
 		case 0:
 			return 1; /* Ignore on GDB Port */
 		default:
@@ -462,6 +463,7 @@ static int cdcacm_control_request(usbd_device *dev,
 
 			return 1;
 		}
+		return 0;
 	case DFU_DETACH:
 		if(req->wIndex == DFU_IF_NO) {
 			*complete = dfu_detach_complete;
@@ -515,7 +517,7 @@ static void cdcacm_set_config(usbd_device *dev, uint16_t wValue)
 
 	/* Serial interface */
 	usbd_ep_setup(dev, 0x03, USB_ENDPOINT_ATTR_BULK,
-	              CDCACM_PACKET_SIZE, usbuart_usb_out_cb);
+	              CDCACM_PACKET_SIZE / 2, usbuart_usb_out_cb);
 	usbd_ep_setup(dev, 0x83, USB_ENDPOINT_ATTR_BULK,
 	              CDCACM_PACKET_SIZE, usbuart_usb_in_cb);
 	usbd_ep_setup(dev, 0x84, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
@@ -561,4 +563,3 @@ void USB_ISR(void)
 {
 	usbd_poll(usbdev);
 }
-

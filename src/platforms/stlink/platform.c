@@ -63,7 +63,7 @@ void platform_init(void)
 	}
 	/* Setup GPIO ports */
 	gpio_set_mode(TMS_PORT, GPIO_MODE_OUTPUT_50_MHZ,
-	              GPIO_CNF_OUTPUT_PUSHPULL, TMS_PIN);
+	              GPIO_CNF_INPUT_FLOAT, TMS_PIN);
 	gpio_set_mode(TCK_PORT, GPIO_MODE_OUTPUT_50_MHZ,
 	              GPIO_CNF_OUTPUT_PUSHPULL, TCK_PIN);
 	gpio_set_mode(TDI_PORT, GPIO_MODE_OUTPUT_50_MHZ,
@@ -90,10 +90,21 @@ void platform_init(void)
 
 void platform_srst_set_val(bool assert)
 {
-	if (assert)
-		gpio_clear(SRST_PORT, srst_pin);
-	else
-		gpio_set(SRST_PORT, srst_pin);
+	uint32_t crl = GPIOB_CRL;
+	uint32_t shift = (srst_pin == GPIO0) ? 0 : 4;
+	uint32_t mask = 0xf << shift;
+	crl &= ~mask;
+	if (assert) {
+		/* Set SRST as Open-Drain, 50 Mhz, low.*/
+		GPIOB_BRR = srst_pin;
+		GPIOB_CRL = crl | (7 << shift);
+	} else {
+		/* Set SRST as input, pull-up.
+		 * SRST might be unconnected, e.g on Nucleo-P!*/
+		GPIOB_CRL = crl | (8 << shift);
+		GPIOB_BSRR = srst_pin;
+	}
+	while (gpio_get(SRST_PORT, srst_pin) == assert) {};
 }
 
 bool platform_srst_get_val()
