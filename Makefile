@@ -12,6 +12,10 @@ all:
 	$(Q)$(MAKE) $(MFLAGS) -C libopencm3 lib
 	$(Q)$(MAKE) $(MFLAGS) -C src
 
+esp8266:
+	$(Q)$(MAKE) $(MFLAGS) -C src include/version.h
+	$(Q)$(MAKE) $(MFLAGS) -C src PROBE_HOST=esp8266
+
 clean:
 	$(Q)$(MAKE) $(MFLAGS) -C libopencm3 $@
 	$(Q)$(MAKE) $(MFLAGS) -C src $@

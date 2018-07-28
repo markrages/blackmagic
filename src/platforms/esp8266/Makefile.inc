@@ -1,5 +1,5 @@
 # -*-Makefile-*-
-RTOS_PATH=~/src/esp8266/esp-open-rtos
+RTOS_PATH=~/esp-open-rtos
 ESPPORT = /dev/ttyFTDI_CABLE_TX
 ESPBAUD = 230400
 
@@ -11,6 +11,8 @@ CFLAGS += -Wno-sign-compare
 CFLAGS += -Wno-old-style-declaration
 CFLAGS += -Wno-type-limits
 CFLAGS += -Wno-unused-variable
+CFLAGS += -Wno-empty-body
+CFLAGS += -DconfigENABLE_BACKWARD_COMPATIBILITY=1
 
 # Requires hack from https://groups.google.com/forum/#!searchin/esp-open-rtos/hostname/esp-open-rtos/bptnLZDxaEY/bBsTYf02AAAJ
 CFLAGS +=  -DLWIP_NETIF_HOSTNAME=1 -DESP8266_HOSTNAME=\"BLACKMAGIC01\"
