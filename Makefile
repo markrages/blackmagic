@@ -20,3 +20,5 @@ clean:
 	$(Q)$(MAKE) $(MFLAGS) -C libopencm3 $@
 	$(Q)$(MAKE) $(MFLAGS) -C src $@
 
+flash:
+	$(Q)$(MAKE) $(MFLAGS) -C src flash

@@ -62,6 +62,11 @@ void platform_init(int argc, char **argv)
 	assert(gdb_if_init() == 0);
 }
 
+void platform_buffer_flush(void)
+{
+	;
+}
+
 void platform_srst_set_val(bool assert)
 {
 	(void)assert;

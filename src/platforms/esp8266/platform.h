@@ -29,6 +29,8 @@
 
 #define NO_USB_PLEASE
 
+void platform_buffer_flush(void);
+
 #define SET_RUN_STATE(state)
 #define SET_IDLE_STATE(state)
 #define SET_ERROR_STATE(state)
