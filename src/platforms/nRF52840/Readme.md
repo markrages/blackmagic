@@ -18,7 +18,11 @@ Requires nRF52840-DONGLE.  Although the nRF52 is really flexible with GPIO, so i
 
 3. Edit src/platforms/nRF52840/Makefile.inc to point SDK_ROOT to the SDK location.
 
-4. Edit Makefile to put the serial number of your nRF52840 dongle.
+4. Edit Makefile to put the serial number of your nRF52840 dongle. (`lsusb -v | grep iSerial`)
+
+5. Push the reset to put the dongle into bootload mode.
+
+6. `make PROBE_HOST=nRF52840 usbdfu` to build the code and load it into the dongle.
 
 ## License
 
