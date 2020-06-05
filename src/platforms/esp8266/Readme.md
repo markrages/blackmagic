@@ -4,6 +4,8 @@
 
 This is a port of Black Magic Probe to the esp8266, which allows wireless debugging of blackmagic-supported ARM targets.
 
+<img alt="esp01 debugging STM32" src="https://github.com/markrages/blackmagic/blob/esp8266/src/platforms/esp8266/esp01_debugging_stm32.jpg">
+
 ## What it is not
 
 This is not a debugger for the esp8266 itself. I believe OpenOCD supports esp8266 now, but porting that to run *on* an esp8266 would be quite an undertaking.
